@@ -2,8 +2,12 @@ services:
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
-    ports:
-      - "1883:1883"
-      - "9001:9001"
     restart: unless-stopped
+    network_mode: host
+  esp-builder:
+    image: espressif/idf-rust:esp32_1.85.0.0
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: tail -f /dev/null
     network_mode: host
