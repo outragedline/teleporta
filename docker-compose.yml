@@ -4,10 +4,26 @@ services:
     container_name: mosquitto
     restart: unless-stopped
     network_mode: host
+
   esp-builder:
+    container_name: esp-builder
     image: espressif/idf-rust:esp32_1.85.0.0
     volumes:
       - .:/app
+      - esp-target-cache:/app/esp/target
     working_dir: /app
-    command: tail -f /dev/null
+    tty: true
+    stdin_open: true
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+    group_add:
+      - "${TTY_GID}"
     network_mode: host
+    command: >
+      sh -c "
+        chown -R esp:esp /app/esp/target &&
+        exec /bin/bash
+      "
+
+volumes:
+  esp-target-cache: {}

@@ -14,8 +14,8 @@ harness = false # do not use the built in cargo test harness -> resolve rust-ana
 opt-level = "s"
 
 [profile.dev]
-debug = true    # Symbols are nice and they don't increase the size on Flash
-opt-level = "z"
+debug = true  # Symbols are nice and they don't increase the size on Flash
+opt-level = 0
 
 [features]
 default = []
@@ -28,7 +28,15 @@ esp-idf-svc = { version = "0.51", features = [
 	"critical-section",
 	"embassy-time-driver",
 	"embassy-sync",
+	"experimental",
+	"alloc",
 ] }
+embedded-svc = "0.28.1"
+esp-idf-sys = "0.36.1"
+esp-idf-hal = "0.45.2"
+anyhow = "1.0.98"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [build-dependencies]
 embuild = "0.33"
