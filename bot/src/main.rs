@@ -9,6 +9,8 @@ struct MqttSettings {
     device_id: String,
     host: String,
     port: u16,
+    username: String,
+    password: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,11 +33,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
 
     let bot = Bot::new(settings.token);
 
-    let mqtt_options = MqttOptions::new(
+    let mut mqtt_options = MqttOptions::new(
         settings.mqtt.device_id,
         settings.mqtt.host,
         settings.mqtt.port,
     );
+    mqtt_options
+        .set_credentials(settings.mqtt.username, settings.mqtt.password)
+        .set_transport(rumqttc::Transport::tls_with_default_config());
+
     let (async_client, mut event_loop) = AsyncClient::new(mqtt_options, 10);
     let (tx, mut rx) = mpsc::channel::<(String, String)>(100);
 
@@ -57,8 +63,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
                                 };
                             },
                             Ok(_)=> {},
-                            Err(_) => {
-                                println!("Fudeu");
+                            Err(e) => {
+                                println!("Here it is");
+                                println!("{e}");
                             },
                         }
                     }
