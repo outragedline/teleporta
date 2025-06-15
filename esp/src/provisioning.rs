@@ -1,8 +1,53 @@
+use embedded_svc::wifi::{ClientConfiguration, Configuration};
+use esp_idf_svc::hal::modem::Modem;
 use esp_idf_svc::sys::*;
+use esp_idf_svc::wifi::{BlockingWifi, EspWifi};
+use esp_idf_svc::{eventloop::EspSystemEventLoop, nvs::EspDefaultNvsPartition};
 use std::ffi::c_void;
 use std::ffi::CString;
 use std::ptr;
 
+pub fn connect_to_wifi(
+    modem: Modem,
+    sys_loop: &EspSystemEventLoop,
+    nvs: &EspDefaultNvsPartition,
+) -> anyhow::Result<BlockingWifi<EspWifi<'static>>> {
+    let mut wifi = BlockingWifi::wrap(
+        EspWifi::new(modem, sys_loop.clone(), Some(nvs.clone()))?,
+        sys_loop.clone(),
+    )?;
+
+    let prov = WifiProvisioning::new()?;
+    if !prov.is_provisioned()? {
+        let wifi_configuration: Configuration = Configuration::Client(ClientConfiguration {
+            ..Default::default()
+        });
+        wifi.set_configuration(&wifi_configuration)?;
+        wifi.start()?;
+        prov.start_provisioning(
+            wifi_prov_security_WIFI_PROV_SECURITY_1,
+            "teleporta",      // Proof of Possession (POP)
+            "PROV_TELEPORTA", // Service Name
+            None,             // No Service Key
+        )?;
+
+        println!("Waiting for Wi-Fi provisioning...");
+        prov.wait();
+
+        println!("Provisioning completed. Stopping...");
+        prov.stop();
+    } else {
+        wifi.start()?;
+        wifi.connect()?;
+    }
+    wifi.wait_netif_up()?;
+    let ip_info = wifi.wifi().sta_netif().get_ip_info()?;
+    println!("Wifi DHCP info: {:?}", ip_info);
+    Ok(wifi)
+}
+
+// From here bellow i took from a github repo and made just some changes
+// Its working so i dont dare to touch it anymore
 pub struct WifiProvisioning;
 
 impl WifiProvisioning {
