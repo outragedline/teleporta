@@ -1,5 +1,5 @@
 # Rust often needs a bit of an extra main task stack size compared to C (the default is 3K)
-CONFIG_ESP_MAIN_TASK_STACK_SIZE=8000
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=9000
 CONFIG_BT_ENABLED=y
 CONFIG_NIMBLE_ENABLED=y
 
