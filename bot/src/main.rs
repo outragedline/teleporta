@@ -33,14 +33,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
 
     let bot = Bot::new(settings.token);
 
-    let mut mqtt_options = MqttOptions::new(
+    let mqtt_options = MqttOptions::new(
         settings.mqtt.device_id,
         settings.mqtt.host,
         settings.mqtt.port,
     );
-    mqtt_options
-        .set_credentials(settings.mqtt.username, settings.mqtt.password)
-        .set_transport(rumqttc::Transport::tls_with_default_config());
 
     let (async_client, mut event_loop) = AsyncClient::new(mqtt_options, 10);
     let (tx, mut rx) = mpsc::channel::<(String, String)>(100);
@@ -100,9 +97,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
 #[command(rename_rule = "lowercase", description = "Commands")]
 enum Command {
     #[command(description = "Open the door")]
-    Approve,
-    #[command(description = "Play sad music")]
-    Disapprove,
+    Open,
+    #[command(description = "Closes the door")]
+    Close,
     #[command(description = "Yes im helping")]
     Help,
 }
@@ -114,12 +111,14 @@ async fn answer(
     tx: mpsc::Sender<(String, String)>,
 ) -> ResponseResult<()> {
     match cmd {
-        Command::Approve => {
-            let _ = tx.send(("door/approved".to_string(), "".to_string())).await;
-        }
-        Command::Disapprove => {
+        Command::Open => {
             let _ = tx
-                .send(("door/disapproved".to_string(), "".to_string()))
+                .send(("door/command".to_string(), "open".to_string()))
+                .await;
+        }
+        Command::Close => {
+            let _ = tx
+                .send(("door/command".to_string(), "close".to_string()))
                 .await;
         }
         Command::Help => {

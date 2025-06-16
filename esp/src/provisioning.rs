@@ -1,21 +1,23 @@
 use embedded_svc::wifi::{ClientConfiguration, Configuration};
-use esp_idf_svc::hal::modem::Modem;
-use esp_idf_svc::sys::*;
-use esp_idf_svc::wifi::{BlockingWifi, EspWifi};
-use esp_idf_svc::{eventloop::EspSystemEventLoop, nvs::EspDefaultNvsPartition};
-use std::ffi::c_void;
-use std::ffi::CString;
-use std::ptr;
+use esp_idf_svc::{
+    eventloop::EspSystemEventLoop,
+    hal::modem::Modem,
+    nvs::EspDefaultNvsPartition,
+    sys::*,
+    wifi::{BlockingWifi, EspWifi},
+};
+use std::{
+    ffi::{c_void, CString},
+    ptr,
+};
 
 pub fn connect_to_wifi(
     modem: Modem,
     sys_loop: &EspSystemEventLoop,
     nvs: &EspDefaultNvsPartition,
-) -> anyhow::Result<BlockingWifi<EspWifi<'static>>> {
-    let mut wifi = BlockingWifi::wrap(
-        EspWifi::new(modem, sys_loop.clone(), Some(nvs.clone()))?,
-        sys_loop.clone(),
-    )?;
+) -> anyhow::Result<EspWifi<'static>> {
+    let mut esp_wifi = EspWifi::new(modem, sys_loop.clone(), Some(nvs.clone()))?;
+    let mut wifi = BlockingWifi::wrap(&mut esp_wifi, sys_loop.clone())?;
 
     let prov = WifiProvisioning::new()?;
     if !prov.is_provisioned()? {
@@ -43,7 +45,7 @@ pub fn connect_to_wifi(
     wifi.wait_netif_up()?;
     let ip_info = wifi.wifi().sta_netif().get_ip_info()?;
     println!("Wifi DHCP info: {:?}", ip_info);
-    Ok(wifi)
+    Ok(esp_wifi)
 }
 
 // From here bellow i took from a github repo and made just some changes
